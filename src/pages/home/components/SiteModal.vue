@@ -40,6 +40,7 @@ function handleCommit() {
         v-model:value="modalStore.inputValues.url"
         :status="modalStore.inputValues.url.trim() ? undefined : inputStatus "
         placeholder="链接"
+        w-full
         @keydown.enter="modalStore.handleCommit"
       />
       <n-input
