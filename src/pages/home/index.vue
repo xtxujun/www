@@ -17,8 +17,8 @@ const searchBoxHeight = '40px'
 
 <template>
   <TheDoc>
-     <div p="12 sm:24" bg="$main-bg-c" w="full sm:auto" :class="{ no_select: settingStore.isSetting }">
-   <MainHeader />
+    <div p="12 sm:24" bg="$main-bg-c" w="full sm:auto" :class="{ no_select: settingStore.isSetting }" style="height: 100vh">
+      <MainHeader />
       <MainClock v-if="!settingStore.isSetting" />
       <MainSearch v-if="!settingStore.isSetting" my-24 />
       <SiteContainer />
