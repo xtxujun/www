@@ -12,12 +12,6 @@ const keyword = ref('')
 
 const curSearchIndex = ref(0)
 
-const showKeyDownSel = ref(false)
-
-const noticeKeyList = ref<string[]>([])
-
-const selectedIndex = ref(0)
-
 const searchInputRef = ref<HTMLInputElement>()
 
 function initcurSearchIndex() {
@@ -256,12 +250,12 @@ onUnmounted(() => {
       <div
         v-if="keyword.length > 0"
         hover="op-80"
-        i-carbon:close mx-4 cursor-pointer text-20 op-40 transition duration-300
+        i-carbon:close mr-8 cursor-pointer text-20 op-40 transition duration-300
         @click="handleCloseClick"
       />
     </div>
     <!-- Button -->
-    <button flex-center shrink-0 gap-x-4 px-72 btn @click="search">
+    <button flex-center shrink-0 gap-x-6 px-72 btn @click="search">
       <span i-carbon:search inline-block text-14 />
     </button>
   </div>
