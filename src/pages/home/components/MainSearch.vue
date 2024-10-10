@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { vOnClickOutside } from '@vueuse/components'
 import type { Search } from '@/types'
-import { debounce, getFaviconUrl, getText, search as searchSetting } from '@/utils'
+import { debounce, getFaviconUrl, search as searchSetting } from '@/utils'
 import searchEngine from '@/utils/search-engine'
 
 const settingStore = useSettingStore()
@@ -12,25 +12,28 @@ const keyword = ref('')
 
 const curSearchIndex = ref(0)
 
+const showKeyDownSel = ref(false)
+
+const noticeKeyList = ref<string[]>([])
+
+const selectedIndex = ref(0)
+
 const searchInputRef = ref<HTMLInputElement>()
 
 function initcurSearchIndex() {
-  curSearchIndex.value = searchList.findIndex(search => search.key === settingStore.settings.search) || 0
+  curSearchIndex.value = searchList.findIndex(search => search.enName === settingStore.settings.search) || 0
 }
 
 watch(() => settingStore.settings.search, () => {
   initcurSearchIndex()
 }, { immediate: true })
 
-function search(e?: any) {
-  if (
-    !keyword.value.trim()
-    // 防止中文输入时回车键触发搜索
-    || e?.isComposing
-  )
+function search() {
+  if (!keyword.value.trim())
     return
+
   const currentSearch = searchList[curSearchIndex.value]
-  window.open(`${currentSearch.value.url}?${currentSearch.value.wd}=${keyword.value}`)
+  window.open(`${currentSearch.value.url}?${currentSearch.value.key}=${keyword.value}`)
   clearNoticeKey()
   searchInputRef.value?.blur()
 }
@@ -39,19 +42,18 @@ function _getFavicon(search: Search) {
   return search.favicon || getFaviconUrl(search.url)
 }
 
-/* Search engine selection */
-const selectionVisible = ref(false)
-
 function changeSearch(i: number) {
   curSearchIndex.value = i
   toggleSelection()
 }
 
+const selectionVisible = ref(false)
+
+// Don't use 'useClickOutside' because it will still trigger the click event when the selection is closed
 function toggleSelection() {
   selectionVisible.value = !selectionVisible.value
 }
 
-/* Handle keydown */
 function handleKeydown(e: KeyboardEvent) {
   // - 快捷切换搜索引擎
   if (e.key === '#' && !keyword.value.length)
@@ -72,14 +74,11 @@ function handleKeydown(e: KeyboardEvent) {
     selectionVisible.value = false
 }
 
-/* Keyword recommend */
-const showKeyDownSel = ref(false)
-const noticeKeyList = ref<string[]>([])
-const selectedIndex = ref(0)
+const { iconStyle } = useIconStyle()
 
 const requestEngApi = debounce(() => {
   const curSearch = searchList[curSearchIndex.value]
-  searchEngine.complete(curSearch.key as any, keyword.value, (params: Params) => {
+  searchEngine.complete(curSearch.enName, keyword.value, (params: Params) => {
     showKeyDownSel.value = true
     if (keyword.value.trim().length === 0)
       return
@@ -151,15 +150,9 @@ function handleLeave() {
   selectedIndex.value = 0
 }
 
-function handleFocus() {
+function handleFocus(_: Event) {
+  searchInputRef.value?.select()
   handleInput(new Event('input'))
-}
-
-function handleFocusShortcut(e: KeyboardEvent) {
-  if (!(e.ctrlKey && e.key === 'Enter'))
-    return
-  searchInputRef.value?.focus()
-  handleFocus()
 }
 
 function setActive(i: number) {
@@ -169,20 +162,10 @@ function setActive(i: number) {
 function setInactive(_: number) {
   selectedIndex.value = 0
 }
-
-/* Icon style */
-const { iconStyle } = useIconStyle()
-
-onMounted(() => {
-  window.addEventListener('keydown', handleFocusShortcut)
-})
-onUnmounted(() => {
-  window.removeEventListener('keydown', handleFocusShortcut)
-})
 </script>
 
 <template>
-  <div dark="bg-$bg-c" w="full sm:450!" bg="gray-200" relative mx-auto flex h-44>
+  <div dark="bg-$bg-c" w="full sm:450!" bg="gray-200" relative mx-auto flex h-44 style="width: calc(50%) !important; right: calc(0%) !important;">
     <!-- Keyword recommend -->
     <div
       v-show="showKeyDownSel && noticeKeyList.length > 1"
@@ -223,14 +206,14 @@ onUnmounted(() => {
         >
           <div flex-center gap-x-8 text="15 $text-c-1">
             <img :src="_getFavicon(item.value)" :style="iconStyle" circle h-20 w-20>
-            <div>{{ getText(item.name) }}</div>
+            <div>{{ item.name }}</div>
             <div ml-4 font-300>{{ `#${item.value.s}` }}</div>
           </div>
           <div v-if="curSearchIndex === i" i-carbon:checkmark text-18 />
         </div>
       </div>
     </div>
-   <!-- Input -->
+    <!-- Input -->
     <div flex items-center w="full">
       <input
         ref="searchInputRef"
@@ -254,8 +237,9 @@ onUnmounted(() => {
       />
     </div>
     <!-- Button -->
-    <button flex-center shrink-0 gap-x-4 px-16 btn @click="search">
-      <span i-carbon:search inline-block text-16 />
+    <button flex-center shrink-0 gap-x-4 w-72 btn @click="search">
+      <span i-carbon:search inline-block text-14 />
+      搜索
     </button>
   </div>
 </template>
