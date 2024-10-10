@@ -14,26 +14,22 @@ const settingStore = useSettingStore()
 
 <template>
   <TheDoc>
-    <div p="12 sm:24" bg="$main-bg-c" w="full sm:auto" :class="{ no_select: settingStore.isSetting }" style="height: 100vh">
+    <div my="0 sm:6vh" p="12 sm:24" bg="$main-bg-c" w="full sm:auto" :class="{ no_select: settingStore.isSetting }">
       <MainHeader />
       <MainClock v-if="!settingStore.isSetting" />
       <MainSearch v-if="!settingStore.isSetting" my-24 />
-      <SiteContainer />
+      <SiteContainer :key="settingStore.siteContainerKey" />
       <MainSetting />
-      <TheFooter />
+      <TheFooter v-if="settingStore.getSettingValue('showFooter')" />
     </div>
+    <Blank />
   </TheDoc>
 </template>
 
-<route lang="json">
-{
-  "path": "/",
-  "children": [
-    {
-      "name": "setting",
-      "path": "setting",
-      "component": "@/components/Blank.vue"
-    }
-  ]
-}
+<route lang="yaml">
+path: /
+children:
+  - name: setting
+    path: setting
+    component: /src/components/Blank.vue
 </route>
