@@ -1,19 +1,13 @@
 <script setup lang="ts">
 import SiteNavBar from './SiteNavBar.vue'
-import SiteModal from './SiteModal.vue'
 import SiteGroupList from './SiteGroupList.vue'
-import { FAVICON_MAP_SYMBOL } from '@/utils'
-
-// TODO 重置预设后清除 faviconMap
-const faviconMap = ref(new Map())
-
-provide(FAVICON_MAP_SYMBOL, faviconMap)
+import SiteModal from './SiteModal.vue'
 </script>
 
 <template>
-  <div px="md:32 lg:64" text="$text-c-1" z-8>
+  <div text="$text-c-1" z-8>
     <SiteNavBar />
-    <SiteGroupList />
+    <SiteGroupList py-28 style="margin-left: auto; margin-right: auto;" />
     <SiteModal />
   </div>
 </template>
