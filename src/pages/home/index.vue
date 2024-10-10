@@ -11,7 +11,7 @@ defineOptions({
 
 const settingStore = useSettingStore()
 
-const searchBoxWidth = '300px'
+const searchBoxWidth = 'full'
 const searchBoxHeight = '40px'
 </script>
 
