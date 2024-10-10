@@ -230,12 +230,11 @@ onUnmounted(() => {
         </div>
       </div>
     </div>
-    <!-- Input -->
+   <!-- Input -->
     <div flex items-center w="full">
       <input
         ref="searchInputRef"
         v-model="keyword"
-        autofocus
         text="15 $text-c-1"
         h-full w-full bg-inherit op-80
         @keydown.enter="search"
@@ -250,7 +249,7 @@ onUnmounted(() => {
       <div
         v-if="keyword.length > 0"
         hover="op-80"
-        i-carbon:close mr-8 cursor-pointer text-20 op-40 transition duration-300
+        i-carbon:close mx-4 cursor-pointer text-20 op-40 transition duration-300
         @click="handleCloseClick"
       />
     </div>
