@@ -41,7 +41,7 @@ function handleCommit() {
         :status="modalStore.inputValues.url.trim() ? undefined : inputStatus "
         placeholder="链接"
         @keydown.enter="modalStore.handleCommit"
-        class="w-full h-10"
+        :style="{ width: '100% !important', height: '40px !important' }"
       />
       <n-input
         v-if="modalStore.target === 'site'"
