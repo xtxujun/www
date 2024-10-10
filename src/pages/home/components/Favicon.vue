@@ -1,75 +1,54 @@
 <script setup lang="ts">
 import type { PropType } from 'vue'
 import type { Site } from '@/types'
-import { FAVICON_MAP_SYMBOL, getFaviconUrl } from '@/utils'
+import { getFaviconUrl, getRandomDarkColor } from '@/utils'
 
 const props = defineProps({
   site: {
     type: Object as PropType<Site>,
     required: true,
   },
-  size: {
+  siteIndex: {
     type: Number,
-    default: 24,
+    required: true,
   },
-  round: {
-    type: Boolean,
-    default: false,
+  groupIndex: {
+    type: Number,
+    required: true,
   },
 })
+
+const siteStore = useSiteStore()
 
 const { iconStyle } = useIconStyle()
 
-const faviconMap = inject<Ref<Map<number, HTMLImageElement | HTMLDivElement>>>(FAVICON_MAP_SYMBOL)!
+const isGen = ref(false)
+const isLoading = ref(true)
 
-const $faviconBox = ref<HTMLDivElement>()
-
-onMounted(() => {
-  const id = props.site.id
-  const img = faviconMap.value.get(id)
-
-  if (!img) {
-    const img = new Image()
-    img.src = props.site.favicon || getFaviconUrl(props.site.url)
-    img.onload = () => {
-      $faviconBox.value?.appendChild(img)
-      faviconMap.value.set(id, img)
-    }
-    img.onerror = () => {
-      const favicon = document.createElement('div')
-      favicon.innerText = props.site.name.toLocaleUpperCase().charAt(0)
-      faviconMap.value.set(id, favicon)
-      $faviconBox.value?.appendChild(favicon)
-    }
-  }
-  else if (img) {
-    $faviconBox.value?.appendChild(img)
-  }
-})
+function handleFaviconError(site: Site) {
+  isGen.value = true
+  siteStore.setGroupIndex(props.groupIndex)
+  siteStore.setSiteIndex(props.siteIndex)
+  if (site.bgColor)
+    return
+  siteStore.updateSite({
+    ...site,
+    bgColor: getRandomDarkColor(),
+  })
+}
 </script>
 
 <template>
-  <div ref="$faviconBox" class="favicon" :style="[iconStyle, { width: `${size}px`, height: `${size}px`, fontSize: `${size / 2}px` }]" />
+  <div :style="iconStyle" h-24 w-24>
+    <img
+      v-if="!isGen"
+      :src="site.favicon || getFaviconUrl(site.url)"
+      h-full w-full
+      @error="handleFaviconError(site)"
+      @onload="isLoading = false"
+    >
+    <div v-else :style="{ backgroundColor: site.bgColor }" h-full w-full flex-center scale-112 rounded-full text="white sm">
+      {{ site.name.toLocaleUpperCase().charAt(0) }}
+    </div>
+  </div>
 </template>
-
-<style lang="scss">
-.favicon {
-  img, div {
-    width: 100%;
-    height: 100%;
-  }
-  img {
-    object-fit: contain;
-    object-position: center;
-  }
-  div {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    color: #fff;
-    background-color: var(--primary-c);
-    transform: scale(1.12);
-    border-radius: 50%;
-  }
-}
-</style>
