@@ -18,21 +18,25 @@ const searchBoxHeight = '40px'
 <template>
   <TheDoc>
      <div p="12 sm:24" bg="$main-bg-c" w="full sm:auto" :class="{ no_select: settingStore.isSetting }">
-      <MainHeader />
+   <MainHeader />
       <MainClock v-if="!settingStore.isSetting" />
       <MainSearch v-if="!settingStore.isSetting" my-24 />
-      <SiteContainer :key="settingStore.siteContainerKey" />
+      <SiteContainer />
       <MainSetting />
-      <TheFooter v-if="settingStore.getSettingValue('showFooter')" />
+      <TheFooter />
     </div>
-    <Blank />
   </TheDoc>
 </template>
 
-<route lang="yaml">
-path: /
-children:
-  - name: setting
-    path: setting
-    component: /src/components/Blank.vue
+<route lang="json">
+{
+  "path": "/",
+  "children": [
+    {
+      "name": "setting",
+      "path": "setting",
+      "component": "@/components/Blank.vue"
+    }
+  ]
+}
 </route>
