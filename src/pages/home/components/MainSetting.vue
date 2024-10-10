@@ -1,30 +1,41 @@
 <script setup lang="ts">
+import type { VNode } from 'vue'
 import SettingSelection from './SettingSelection.vue'
-import type { Category, SettingItem, Settings, Theme } from '@/types'
-import { deepClone, showLunar, theme } from '@/utils'
-import presetData from '@/preset.json'
+import type { Category, SettingItem, Settings, TagMode, Theme, WebsitePreference } from '@/types'
+import { getText, loadLanguageAsync } from '@/utils'
+import * as S from '@/utils/settings'
 
-// TODO 设置项完善
 const settingStore = useSettingStore()
-const renderStore = useRenderStore()
+const siteStore = useSiteStore()
 
 /* ThemeSetting */
 function renderThemeLabel(option: SettingItem<Theme>): VNode {
-  const currentTheme = theme.children.find(item => item.enName === option.enName)!
-  const bgColor = currentTheme!.value.bgC
+  const currentTheme = S.theme.children.find(item => item.key === option.key)!
+  const bgColor = currentTheme.value!.bgC
   return h('div', { class: 'flex items-center gap-x-8' }, [
     h('div', { class: 'w-16 h-16 circle border-1 border-fff', style: { backgroundColor: bgColor } }),
-    h('div', option.name),
+    h('div', getText(option.name)),
   ])
 }
-/* Icon Style */
+
+/* Language */
+function toggleLanguage(language: string) {
+  settingStore.setSettings({ language })
+  loadLanguageAsync(language)
+}
+
+/* WebsitePreference */
+function handleWebsitePreferenceChange(key: WebsitePreference) {
+  siteStore.setCateIndex(0)
+  settingStore.setSettings({ websitePreference: key })
+  settingStore.refreshSiteContainer()
+}
 
 /* 导入导出 */
-interface CacheData {
+export interface CacheData {
   data: Category[]
   settings: Settings
 }
-const siteStore = useSiteStore()
 
 function exportData() {
   const data = {
@@ -41,7 +52,7 @@ function exportData() {
   document.body.appendChild(a)
   a.click()
   URL.revokeObjectURL(url)
-  window.$notification.success({ content: '已导出~', duration: 3000 })
+  $message.success(t('messages.exported'))
 }
 
 function importData() {
@@ -55,31 +66,36 @@ function importData() {
         const jsonStr = await file.text()
         const data = JSON.parse(jsonStr) as CacheData
         if (!data.data || !data.settings)
-          throw new Error('请导入合法的数据文件')
+          throw new Error('Invalid data')
         loadData(data)
-        window.$notification.success({ content: '导入成功~', duration: 3000 })
+        settingStore.setSettings({ websitePreference: 'Customize' })
+        settingStore.refreshSiteContainer()
+        $message.success(t('messages.imported'))
       }
       catch (err: any) {
-        window.$notification.error({ content: err.message, duration: 3000 })
+        $message.error(t('messages.warnInvalidImport'))
       }
     }
   })
   inputElement.click()
 }
 
+/* 重置预设 */
 function resetData() {
-  window.$dialog.warning({
-    title: '提示',
-    content: '数据重置后无法恢复，你确认要重置数据吗？',
-    positiveText: '确认',
-    negativeText: '取消',
+  $dialog.warning({
+    title: t('messages.tip'),
+    content: t('messages.warnResetData'),
+    positiveText: t('button.confirm'),
+    negativeText: t('button.cancel'),
     onPositiveClick() {
-      loadData(deepClone(presetData))
-      window.$notification.success({ content: '已重置~', duration: 3000 })
+      siteStore.restoreData()
+      settingStore.restoreSettings()
+      toggleTheme(settingStore.settings.theme)
+      loadLanguageAsync(settingStore.settings.language)
+      settingStore.refreshSiteContainer()
+      $message.success(t('messages.reset'))
       // 重置分类索引
       siteStore.setCateIndex(0)
-      // 重新渲染 site group list，否则自定义图标的背景色会丢失
-      renderStore.refreshSiteGroupList()
     },
   })
 }
@@ -93,37 +109,122 @@ function loadData(data: any) {
 
 <template>
   <section v-if="settingStore.isSetting" px="md:32 lg:64">
-    <div flex flex-wrap sm="grid grid-cols-2" justify-between gap-12>
+    <div my-16 text="16 $text-c-1" italic>
+      {{ $t('settings.title') }}
+    </div>
+    <div grid grid-cols-2 md="grid-cols-3" lg="grid-cols-4" justify-between gap-12>
       <SettingSelection
         v-model="settingStore.settings.theme"
-        :title="theme.name"
-        :options="theme.children"
+        :title="S.theme.name"
+        :options="S.theme.children"
         :render-label="renderThemeLabel"
         label-field="name"
-        value-field="enName"
+        value-field="key"
         :on-update-value="(theme: string) => toggleTheme(theme)"
       />
       <SettingSelection
-        v-model="settingStore.settings.showLunar"
-        :title="showLunar.name"
-        :options="showLunar.children"
+        v-model="settingStore.settings.language"
+        :title="S.language.name"
+        :options="S.language.children"
         label-field="name"
-        value-field="enName"
-        :on-update-value="(enName: string) => settingStore.setSettings({ showLunar: enName })"
+        value-field="key"
+        :on-update-value="(key: string) => toggleLanguage(key)"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.websitePreference"
+        :title="S.websitePreference.name"
+        :options="S.websitePreference.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="handleWebsitePreferenceChange"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.tagMode"
+        :title="S.tagMode.name"
+        :options="S.tagMode.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: TagMode) => settingStore.setSettings({ tagMode: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.search"
+        :title="S.search.name"
+        :options="S.search.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ search: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.iconStyle"
+        :title="S.iconStyle.name"
+        :options="S.iconStyle.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ iconStyle: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.linkStrategy"
+        :title="S.linkStrategy.name"
+        :options="S.linkStrategy.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ linkStrategy: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.showTime"
+        :title="S.showTime.name"
+        :options="S.showTime.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ showTime: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.showDate"
+        :title="S.showDate.name"
+        :options="S.showDate.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ showDate: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.showSecond"
+        :title="S.showSecond.name"
+        :options="S.showSecond.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ showSecond: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.showLunar"
+        :title="S.showLunar.name"
+        :options="S.showLunar.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ showLunar: key })"
+      />
+      <SettingSelection
+        v-model="settingStore.settings.showFooter"
+        :title="S.showFooter.name"
+        :options="S.showFooter.children"
+        label-field="name"
+        value-field="key"
+        :on-update-value="(key: string) => settingStore.setSettings({ showFooter: key })"
       />
     </div>
-    <div mt-24 flex sm="justify-center" justify-between gap-x-12>
+    <div mt-24 flex flex-wrap justify-center gap-12>
       <n-button type="primary" secondary @click="resetData">
-        重置数据
-      </n-button>
-      <n-button type="primary" @click="$router.back()">
-        完成
+        {{ $t('button.resetData') }}
       </n-button>
       <n-button type="success" secondary @click="importData">
-        导入数据
+        {{ $t('button.importData') }}
       </n-button>
       <n-button type="primary" @click="exportData">
-        导出数据
+        {{ $t('button.exportData') }}
+      </n-button>
+    </div>
+    <div my-24 flex-center>
+      <n-button size="large" type="primary" @click="$router.back()">
+        {{ $t('button.complete') }}
       </n-button>
     </div>
   </section>

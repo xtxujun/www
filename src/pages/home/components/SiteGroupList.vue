@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import draggable from 'vuedraggable'
-import Favicon from './Favicon.vue'
-import type { Group, Site } from '@/types'
+import SiteItemCard from './SiteItemCard.vue'
+import type { Group, Site, TagMode } from '@/types'
 
 const modalStore = useModalStore()
 const siteStore = useSiteStore()
@@ -22,13 +22,16 @@ const addGroupVisible = computed(() => route.name === 'setting' && siteStore.dat
 const { draggableOptions, handleStart, handleEnd } = useDrag()
 
 const settingStore = useSettingStore()
-const renderStore = useRenderStore()
+
+const isFullTagMode = computed(() => settingStore.settings.tagMode === 'Full')
+
+const linkStrategyValue = computed(() => settingStore.getSettingItem('linkStrategy').value as string)
 </script>
 
 <template>
-  <section :key="renderStore.siteGroupListKey" text-14>
+  <section py-24>
     <draggable
-      class="flex flex-col gap-y-12"
+      class="flex flex-col gap-y-10"
       :list="siteStore.data[siteStore.cateIndex].groupList"
       item-key="id"
       handle=".group__handle"
@@ -38,16 +41,15 @@ const renderStore = useRenderStore()
         type: 'transition-group',
       }"
       v-bind="draggableOptions"
-      style="display: flex;flex-direction: column;"
       @start="handleStart"
       @end="handleEnd"
     >
       <template #item="{ element: group, index: i }: { element: Group, index: number }">
-        <div :class="{ 'mb-6': settingStore.isSetting, 'flex gap-x-8 items-start': !isXsScreen }" relative>
+        <div :class="{ 'mb-6': settingStore.isSetting, 'flex gap-x-8 items-start': !(isXsScreen || isFullTagMode) }" relative>
           <!-- Group header -->
           <div
-            :class="{ 'cursor-pointer bg-$site-hover-c': settingStore.isSetting, 'mb-12 w-full': isXsScreen }"
-            shrink-0 w-72 style="width: 12%;"
+            :class="{ 'cursor-pointer bg-$site-hover-c': settingStore.isSetting, 'mb-12 w-full': isXsScreen || isFullTagMode }"
+            shrink-0 w-96
             @click="handleGroupClick(i)"
           >
             <div
@@ -57,15 +59,17 @@ const renderStore = useRenderStore()
                 'hover:bg-$site-hover-c': settingStore.isSetting,
               }"
               flex items-center justify-between px-6 h-40
-              style="display: flex;justify-content: center;align-items: center;"
             >
               <div
-                :class="{ 'group__name pl-16 py-4': isXsScreen }"
+                :class="{ 'group__name pl-16 py-4': isXsScreen || isFullTagMode }"
                 whitespace-nowrap text-15 op-80 overflow-hidden
               >
                 {{ group.name }}
               </div>
-              <n-button v-if="settingStore.isSetting && isXsScreen" class="btn--add-site" type="primary" circle :focusable="false" @click.stop="modalStore.showModal('add', 'site', i)">
+              <n-button
+                v-if="settingStore.isSetting && (isXsScreen || isFullTagMode)"
+                class="btn--add-site" type="primary" circle :focusable="false" @click.stop="modalStore.showModal('add', 'site', i)"
+              >
                 <template #icon>
                   <div i-carbon:add />
                 </template>
@@ -83,7 +87,9 @@ const renderStore = useRenderStore()
               :component-data="{
                 tag: 'div',
                 type: 'transition-group',
-                class: 'grid grid-cols-3 gap-x-8 gap-y-12 md:grid-cols-4 lg:grid-cols-5',
+                class: !isFullTagMode
+                  ? 'grid gap-10 grid-cols-3 md:grid-cols-4 lg:grid-cols-6'
+                  : 'grid gap-12 grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4',
               }"
               v-bind="draggableOptions"
               @start="handleStart"
@@ -91,21 +97,20 @@ const renderStore = useRenderStore()
             >
               <template #item="{ element: site, index }: { element: Site, index: number }">
                 <div>
-                  <a
-                    class="site__handle"
-                    :class="{ 'site--setting': settingStore.isSetting, 'hover:bg-$site-hover-c': !settingStore.isDragging }"
-                    :href="site.url" target="_blank"
-                    inline-flex cursor-pointer items-center gap-x-8 px-12 h-40 max-w-100p
+                  <!-- Site item -->
+                  <SiteItemCard
+                    :site="site"
+                    :type="settingStore.settings.tagMode as TagMode"
+                    :target="linkStrategyValue"
+                    :is-setting="settingStore.isSetting"
+                    :is-dragging="settingStore.isDragging"
                     @click="(e) => handleSiteClick(i, index, e)"
-                  >
-                    <Favicon class="shrink-0" :site="site" :site-index="index" :group-index="i" />
-                    <span whitespace-nowrap text-14 overflow-hidden>{{ site.name }}</span>
-                  </a>
+                  />
                 </div>
               </template>
             </draggable>
           </div>
-          <div v-if="settingStore.isSetting && !isXsScreen" absolute z-9 flex-center h-40 r-0>
+          <div v-if="settingStore.isSetting && !(isXsScreen || isFullTagMode)" absolute z-9 flex-center h-40 r-0>
             <n-button class="btn--add-site" type="primary" circle :focusable="false" @click.stop="modalStore.showModal('add', 'site', i)">
               <template #icon>
                 <div i-carbon:add />
