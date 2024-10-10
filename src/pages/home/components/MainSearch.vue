@@ -182,7 +182,7 @@ onUnmounted(() => {
 </script>
 
 <template>
-  <div dark="bg-$bg-c" w="full sm:450!" bg="gray-200" relative mx-auto flex h-44>
+  <div dark="bg-$bg-c" w="full sm:450!" bg="gray-200" relative mx-auto flex h-44 style="width: calc(50%) !important; right: calc(0%) !important;">
     <!-- Keyword recommend -->
     <div
       v-show="showKeyDownSel && noticeKeyList.length > 1"
